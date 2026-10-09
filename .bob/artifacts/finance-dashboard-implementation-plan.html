@@ -1,0 +1,386 @@
+
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Finance Dashboard Implementation Plan</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f7f8fa;
+    --border: #e5e7eb;
+    --text: #1f2328;
+    --muted: #57606a;
+    --accent: #3b82d4;
+    --secondary: #7c5cd8;
+    --code-bg: #f0f2f5;
+    --code-text: #1f2328;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--text);
+    background: var(--bg);
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+  h1 { font-size: 28px; font-weight: 600; margin: 0 0 8px; }
+  h2 { font-size: 20px; font-weight: 600; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 16px; font-weight: 600; margin: 24px 0 8px; color: var(--text); }
+  h4 { font-size: 14px; font-weight: 600; margin: 16px 0 6px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  p { margin: 0 0 12px; }
+  ul, ol { margin: 0 0 12px 20px; }
+  li { margin: 6px 0; }
+  code { font-family: "SF Mono", "Monaco", "Consolas", monospace; font-size: 13px; background: var(--code-bg); padding: 2px 6px; border-radius: 4px; color: var(--code-text); }
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; overflow-x: auto; margin: 12px 0; }
+  pre code { background: none; padding: 0; font-size: 13px; line-height: 1.55; }
+  .section { margin-bottom: 32px; }
+  .folder-tree { font-family: "SF Mono", "Monaco", "Consolas", monospace; font-size: 13px; background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; white-space: pre; line-height: 1.55; color: var(--code-text); }
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--accent); color: white; margin-left: 8px; vertical-align: middle; }
+  .badge-secondary { background: var(--secondary); }
+  .table-wrap { overflow-x: auto; margin: 12px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { border: 1px solid var(--border); padding: 10px 12px; text-align: left; }
+  th { background: var(--surface); font-weight: 600; }
+  tr:nth-child(even) td { background: var(--surface); }
+  .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--border); text-align: center; font-size: 12px; color: var(--muted); }
+  .callout { border-left: 3px solid var(--accent); background: #f0f5fb; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+  .callout-warning { border-left-color: #e8a838; background: #fef9f0; }
+  .callout-danger { border-left-color: #d1242f; background: #fef0f0; }
+  .callout-success { border-left-color: #2da44e; background: #f0fdf4; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  strong { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<h1>Finance Dashboard Implementation Plan</h1>
+<p><strong>Repository:</strong> Github SDLC Automation (greenfield)<br />
+<strong>Target:</strong> React + Yahoo Finance market dashboard for IBM + 4 competitors<br />
+<strong>Views:</strong> Current Day · Last 7 Days · Last Quarter</p>
+
+<div class="section">
+<h2>1. Project Structure</h2>
+<p>Use Vite + React 18 + TypeScript for fast dev server, small bundle, and modern tooling.</p>
+
+<div class="folder-tree">finance-app/
+├── public/
+│   └── vite.svg
+├── src/
+│   ├── assets/                 # static assets (logos, icons)
+│   ├── components/             # presentational UI components
+│   │   ├── charts/             # chart-specific components
+│   │   ├── dashboard/          # dashboard-specific composites
+│   │   ├── layout/             # header, sidebar, footer
+│   │   └── ui/                 # reusable primitives (Button, Card, Select, Spinner, Alert)
+│   ├── config/                 # app-wide constants, ticker map, time windows
+│   ├── context/                # React Context providers (theme, data)
+│   ├── hooks/                  # custom hooks (useFinanceData, useTimeWindow, useDebounce)
+│   ├── services/               # data fetching &amp; normalization layer
+│   │   ├── finance-api.ts      # Yahoo Finance wrapper (yahoo-finance2)
+│   │   ├── transformers.ts     # raw → UI-shaped data
+│   │   └── cache.ts            # in-memory + localStorage cache
+│   ├── store/                  # state management (Zustand)
+│   │   ├── dashboardStore.ts   # global dashboard state
+│   │   └── uiStore.ts          # UI-only state (modals, toasts)
+│   ├── types/                  # TypeScript interfaces
+│   │   ├── finance.ts          # Quote, HistoryPoint, CompanyProfile
+│   │   └── ui.ts               # ViewMode, TimeWindow, LoadingState
+│   ├── utils/                  # pure helpers (formatters, date math, validation)
+│   ├── views/                  # page-level components (route targets)
+│   │   ├── DashboardView.tsx   # main dashboard (3 tabs)
+│   │   └── CompanyDetailView.tsx # future: user-selected company
+│   ├── App.tsx                 # root component, providers, routing
+│   ├── main.tsx                # entry point
+│   └── index.css               # global styles (CSS variables, reset)
+├── tests/                      # co-located or separate test tree
+│   ├── services/
+│   ├── components/
+│   └── utils/
+├── .github/workflows/          # existing CI
+├── index.html
+├── package.json
+├── tsconfig.json
+├── vite.config.ts
+├── vitest.config.ts
+└── README.md</div>
+
+<p class="callout"><strong>Why this layout?</strong> Clear separation: <code>services/</code> owns external I/O, <code>components/</code> owns rendering, <code>store/</code> owns mutable state, <code>hooks/</code> owns reusable logic, <code>views/</code> owns routing targets. Scales cleanly when Part 2 adds the user-selected company feature.</p>
+</div>
+
+<div class="section">
+<h2>2. React Component Boundaries</h2>
+
+<table>
+<thead><tr><th>Component</th><th>Responsibility</th><th>Props / State</th></tr></thead>
+<tbody>
+<tr><td><code>App</code></td><td>Providers (Theme, DashboardStore), Router, top-level layout</td><td>—</td></tr>
+<tr><td><code>DashboardView</code></td><td>Orchestrates three tab panels, fetches data on mount / window change</td><td>activeTab: TimeWindow</td></tr>
+<tr><td><code>TimeWindowTabs</code></td><td>Tab bar for Day / 7-Day / Quarter</td><td>active, onChange</td></tr>
+<tr><td><code>CompanyCard</code></td><td>Summary card: name, ticker, current price, change %, sparkline</td><td>company: CompanySnapshot</td></tr>
+<tr><td><code>ComparisonChart</code></td><td>Multi-series line chart for selected window</td><td>series: ChartSeries[], window: TimeWindow</td></tr>
+<tr><td><code>QuarterTrendChart</code></td><td>Area/line chart showing quarter trajectory per company</td><td>series: ChartSeries[]</td></tr>
+<tr><td><code>LoadingSkeleton</code></td><td>Placeholder while data loads</td><td>variant: 'card' | 'chart'</td></tr>
+<tr><td><code>ErrorBanner</code></td><td>Dismissible error with retry action</td><td>message, onRetry</td></tr>
+<tr><td><code>TickerSelect</code></td><td>(Part 2) Dropdown / autocomplete for user-selected symbol</td><td>value, onChange, disabled</td></tr>
+</tbody>
+</table>
+
+<p><strong>Composition rule:</strong> <code>DashboardView</code> is the only "smart" component that talks to the store/service. All chart/summary components are pure presentational — receive data via props, emit zero side effects. This keeps testing simple and enables storybook-style isolation.</p>
+</div>
+
+<div class="section">
+<h2>3. Data Service Abstraction</h2>
+
+<h3>3.1 Interface (src/services/finance-api.ts)</h3>
+<pre><code>export interface FinanceApi {
+  getQuotes(tickers: string[]): Promise&lt;Quote[]&gt;;
+  getHistory(ticker: string, range: TimeRange): Promise&lt;HistoryPoint[]&gt;;
+  getProfile(ticker: string): Promise&lt;CompanyProfile&gt;;
+}
+
+export const yahooFinanceApi: FinanceApi = {
+  async getQuotes(tickers) { /* yahoo-finance2 quoteSummary */ },
+  async getHistory(ticker, range) { /* yahoo-finance2 chart */ },
+  async getProfile(ticker) { /* yahoo-finance2 quoteSummary modules */ },
+};
+</code></pre>
+
+<h3>3.2 Normalization Layer (src/services/transformers.ts)</h3>
+<p>Raw Yahoo responses → UI-friendly shapes:</p>
+<pre><code>export interface Quote {
+  symbol: string;
+  shortName: string;
+  regularMarketPrice: number;
+  regularMarketChange: number;
+  regularMarketChangePercent: number;
+  currency: string;
+  marketState: 'REGULAR' | 'PRE' | 'POST' | 'CLOSED';
+}
+
+export interface HistoryPoint {
+  date: string;        // ISO date
+  close: number;
+  volume: number;
+}
+
+export interface CompanySnapshot {
+  quote: Quote;
+  history: HistoryPoint[];  // last 7 days or quarter
+}
+</code></pre>
+
+<h3>3.3 Caching Strategy (src/services/cache.ts)</h3>
+<ul>
+<li><strong>In-memory</strong> (Map) keyed by <code>${ticker}:${range}</code> — 30 s TTL for quotes, 5 min for history</li>
+<li><strong>localStorage</strong> persist last successful payload for offline-first feel</li>
+<li><strong>Stale-while-revalidate</strong>: serve cache immediately, refresh in background</li>
+</ul>
+
+<p class="callout"><strong>Why an interface?</strong> Swappable implementation — can replace <code>yahooFinanceApi</code> with a backend proxy, mock service for tests, or different provider without touching components.</p>
+</div>
+
+<div class="section">
+<h2>4. Charting Approach</h2>
+
+<table>
+<thead><tr><th>View</th><th>Chart Type</th><th>Library</th><th>Data Shape</th></tr></thead>
+<tbody>
+<tr><td>Current Day</td><td>Summary cards + mini sparkline (SVG)</td><td>Custom tiny SVG (no dep)</td><td><code>{symbol, points: number[]}</code></td></tr>
+<tr><td>Last 7 Days</td><td>Multi-series line chart</td><td><strong>Recharts</strong> (light, React-native, treeshakeable)</td><td><code>Series: {name, data: {date, close}[]}[]</code></td></tr>
+<tr><td>Last Quarter</td><td>Multi-series area chart (stacked optional)</td><td>Recharts</td><td>Same as 7-day, longer range</td></tr>
+</tbody>
+</table>
+
+<p><strong>Recharts config highlights:</strong></p>
+<ul>
+<li><code>ResponsiveContainer</code> for fluid sizing</li>
+<li><code>XAxis</code> with <code>tickFormatter</code> for short dates</li>
+<li><code>Tooltip</code> shared across series, custom formatter for currency</li>
+<li><code>Legend</code> clickable to toggle series</li>
+<li>Color palette: IBM blue (#0066cc), competitors distinct hues (MSFT blue, ORCL red, SAP blue, CRM orange)</li>
+</ul>
+
+<p class="callout-warning"><strong>Yahoo Finance caveat:</strong> Browser CORS blocks direct <code>yahoo-finance2</code> calls. Two pragmatic options:<br />
+1. <strong>Vite dev proxy</strong> (<code>vite.config.ts</code> <code>server.proxy</code>) to a lightweight Node/Express proxy you control<br />
+2. <strong>Mock mode</strong> for workshop — <code>finance-api.ts</code> returns deterministic fixture data when <code>import.meta.env.VITE_MOCK_FINANCE === 'true'</code> (recommended for reproducible demos)</p>
+</div>
+
+<div class="section">
+<h2>5. State Management Strategy</h2>
+
+<p><strong>Choice: Zustand</strong> — minimal (~1 KB), TypeScript-first, no provider boilerplate, works outside React.</p>
+
+<h3>5.1 Dashboard Store (src/store/dashboardStore.ts)</h3>
+<pre><code>interface DashboardState {
+  // data
+  snapshots: Map&lt;string, CompanySnapshot&gt;;
+  // ui
+  activeWindow: TimeWindow;        // '1D' | '7D' | '1Q'
+  selectedTickers: string[];       // default 5, user can add (Part 2)
+  loading: Set&lt;string&gt;;
+  errors: Map&lt;string, Error&gt;;
+  // actions
+  setActiveWindow: (w: TimeWindow) =&gt; void;
+  addTicker: (ticker: string) =&gt; void;
+  removeTicker: (ticker: string) =&gt; void;
+  refreshAll: () =&gt; Promise&lt;void&gt;;
+  refreshOne: (ticker: string) =&gt; Promise&lt;void&gt;;
+}
+</code></pre>
+
+<h3>5.2 UI Store (src/store/uiStore.ts)</h3>
+<p>Toasts, modal visibility, sidebar collapse — purely ephemeral UI state.</p>
+
+<p class="callout-success"><strong>Why not Redux / Context?</strong> Zustand avoids provider nesting, enables selector-based subscriptions (components re-render only on relevant slice changes), and is trivial to test (just call actions on the store).</p>
+</div>
+
+<div class="section">
+<h2>6. Error Handling</h2>
+
+<table>
+<thead><tr><th>Layer</th><th>Strategy</th><th>User-Facing</th></tr></thead>
+<tbody>
+<tr><td>Network / API</td><td>Retry 2× with exponential backoff (1 s, 2 s)</td><td>Toast + inline retry button on card/chart</td></tr>
+<tr><td>Invalid ticker</td><td>Validate via <code>getProfile</code> before adding</td><td>Inline error under input: "Symbol XYZ not found"</td></tr>
+<tr><td>Partial failure</td><td>Per-ticker error state; others still render</td><td>Card shows "—" with error icon, tooltip shows detail</td></tr>
+<tr><td>Rate limit (Yahoo)</td><td>Cache + dedupe requests; queue if &gt;5 concurrent</td><td>Banner: "Rate limited — showing cached data"</td></tr>
+<tr><td>Missing data points</td><td>Interpolate or show gap in chart</td><td>Chart renders with null gaps; tooltip says "No data"</td></tr>
+</tbody>
+</table>
+
+<p><strong>Error boundary:</strong> Wrap each chart/card in a React error boundary so one crashing component doesn't blank the whole dashboard.</p>
+</div>
+
+<div class="section">
+<h2>7. Test Strategy</h2>
+
+<table>
+<thead><tr><th>Layer</th><th>Tool</th><th>Coverage Target</th><th>Examples</th></tr></thead>
+<tbody>
+<tr><td>Transformers / pure utils</td><td>Vitest</td><td>100%</td><td><code>normalizeQuote</code>, <code>alignHistoryToWindow</code>, <code>formatCurrency</code></td></tr>
+<tr><td>Custom hooks</td><td>Vitest + React Testing Library</td><td>90%</td><td><code>useFinanceData</code> loading/error/success flows</td></tr>
+<tr><td>Presentational components</td><td>Vitest + RTL</td><td>80%</td><td><code>CompanyCard</code> renders price/change; <code>ComparisonChart</code> receives props</td></tr>
+<tr><td>Store actions</td><td>Vitest</td><td>90%</td><td><code>refreshAll</code> populates snapshots; <code>addTicker</code> validates</td></tr>
+<tr><td>Integration (DashboardView)</td><td>Vitest + RTL + MSW</td><td>Smoke</td><td>Tabs switch, data loads, error banner appears</td></tr>
+<tr><td>E2E (optional)</td><td>Playwright</td><td>Critical path</td><td>Load app → see 5 cards → switch to 7D tab → chart renders</td></tr>
+</tbody>
+</table>
+
+<p><strong>Mocking:</strong> Use <strong>MSW (Mock Service Worker)</strong> to intercept <code>yahoo-finance2</code> calls at network level — tests stay deterministic and fast.</p>
+
+<p><strong>Test commands (package.json):</strong></p>
+<pre><code>"test": "vitest run",
+"test:watch": "vitest",
+"test:coverage": "vitest run --coverage",
+"test:e2e": "playwright test"
+</code></pre>
+</div>
+
+<div class="section">
+<h2>8. Local Validation Steps</h2>
+
+<ol>
+<li><strong>Install:</strong> <code>npm install</code></li>
+<li><strong>Type-check:</strong> <code>npm run typecheck</code> (tsc --noEmit)</li>
+<li><strong>Lint:</strong> <code>npm run lint</code> (ESLint + Prettier)</li>
+<li><strong>Unit/Integration tests:</strong> <code>npm test</code></li>
+<li><strong>Build:</strong> <code>npm run build</code> (Vite production bundle)</li>
+<li><strong>Preview:</strong> <code>npm run preview</code> — verify built assets serve correctly</li>
+<li><strong>Dev server:</strong> <code>npm run dev</code> — manual smoke test (3 tabs, 5 companies, charts render)</li>
+</ol>
+
+<p class="callout"><strong>CI alignment:</strong> The existing <code>.github/workflows/finance-app-ci.yml</code> runs <code>npm install → lint → test → build</code> on every push/PR. Local validation mirrors CI exactly.</p>
+</div>
+
+<div class="section">
+<h2>9. GitHub-Driven Feature Evolution</h2>
+
+<h3>9.1 Branch &amp; PR Convention</h3>
+<ul>
+<li><code>feature/initial-finance-dashboard</code> — initial delivery (Part 1)</li>
+<li><code>feature/user-selected-company-chart</code> — Part 2 enhancement</li>
+<li><code>fix/chart-data-normalization</code> — bug fixes</li>
+<li><code>bob/&lt;short-desc&gt;</code> — branches pushed by Bob autonomously</li>
+</ul>
+
+<h3>9.2 PR Template (already in repo)</h3>
+<p>Enforces: Summary, Motivation, Change Type, Bob Collaboration Notes, Validation commands, Feature Request Alignment, Screenshots, Risks.</p>
+
+<h3>9.3 Issue → Implementation Flow</h3>
+<ol>
+<li>Human files issue (e.g., "Add graph for user-selected company")</li>
+<li>Bob fetches issue via GitHub CLI or API (<code>gh issue view 123 --json</code>)</li>
+<li>Bob analyzes repo: reads <code>src/store/dashboardStore.ts</code>, <code>DashboardView.tsx</code>, <code>finance-api.ts</code></li>
+<li>Bob plans: add <code>selectedTicker</code> to store, <code>TickerSelect</code> component, new chart panel, validation</li>
+<li>Bob implements in feature branch, runs <code>npm test &amp;&amp; npm run build</code></li>
+<li>Bob pushes branch, creates/updates PR with generated description (diff summary + test results)</li>
+<li>CI runs automatically; maintainer reviews &amp; merges</li>
+</ol>
+
+<h3>9.4 Extensibility Hooks Built In</h3>
+<ul>
+<li><strong>Ticker registry</strong> in <code>config/tickers.ts</code> — add/remove companies without code changes</li>
+<li><strong>TimeWindow enum</strong> — add "1M", "1Y" by extending enum + config</li>
+<li><strong>ChartSeries adapter</strong> — new chart types only need a <code>ChartSeries</code> producer</li>
+<li><strong>FinanceApi interface</strong> — swap Yahoo for Alpha Vantage, Polygon, or internal proxy</li>
+</ul>
+
+<p class="callout-success"><strong>Key principle:</strong> Every feature arrives via a GitHub issue/PR. Bob never commits directly to <code>main</code> — always works on a feature branch, validates, then opens/updates a PR. This gives full traceability: Issue → Branch → Commits → PR → CI → Merge.</p>
+</div>
+
+<div class="section">
+<h2>10. Recommended First Implementation Order</h2>
+<ol>
+<li>Scaffold: Vite + React + TS + ESLint + Prettier + Vitest + Recharts + Zustand</li>
+<li>Types (<code>src/types/</code>) + Config (<code>src/config/tickers.ts</code>)</li>
+<li>Finance API interface + Mock implementation (fixtures for 5 tickers × 3 windows)</li>
+<li>Transformers + Cache</li>
+<li>Zustand stores</li>
+<li>UI primitives (Card, Button, Select, Spinner, Alert, Tabs)</li>
+<li>Chart components (Sparkline, ComparisonChart, QuarterTrendChart)</li>
+<li>DashboardView + TimeWindowTabs + wiring to store</li>
+<li>Error boundaries + Loading skeletons</li>
+<li>Tests: transformers → hooks → store → component smoke</li>
+<li>CI verification → PR for initial delivery</li>
+</ol>
+</div>
+
+<div class="section">
+<h2>11. Key Dependencies (package.json)</h2>
+<pre><code>{
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "recharts": "^2.12.0",
+    "zustand": "^4.5.0",
+    "yahoo-finance2": "^2.13.0",
+    "date-fns": "^3.6.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "^5.5.0",
+    "vite": "^5.3.0",
+    "vitest": "^2.0.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/jest-dom": "^6.4.0",
+    "msw": "^2.3.0",
+    "eslint": "^9.0.0",
+    "prettier": "^3.3.0",
+    "playwright": "^1.45.0"
+  }
+}
+</code></pre>
+</div>
+
+<div class="footer">
+Made with IBM Bob
+</div>
+</body>
+</html>
