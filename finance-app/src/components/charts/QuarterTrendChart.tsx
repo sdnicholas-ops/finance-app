@@ -26,14 +26,6 @@ const QuarterTrendChart = memo(function QuarterTrendChart({
   showLegend = true,
   stacked = false,
 }: QuarterTrendChartProps) {
-  if (!series.length) {
-    return (
-      <div className={`chart-empty ${className}`} style={{ height }}>
-        <p>No data available</p>
-      </div>
-    );
-  }
-
   const allDates = useMemo(() => {
     const dates = new Set<string>();
     series.forEach((s) => s.data.forEach((d) => dates.add(d.date)));
@@ -66,6 +58,14 @@ const QuarterTrendChart = memo(function QuarterTrendChart({
     const padding = (max - min) * 0.1 || 1;
     return [min - padding, max + padding] as [number, number];
   }, [series]);
+
+  if (!series.length) {
+    return (
+      <div className={`chart-empty ${className}`} style={{ height }}>
+        <p>No data available</p>
+      </div>
+    );
+  }
 
   const formatXAxis = (value: string) => {
     const date = new Date(value);

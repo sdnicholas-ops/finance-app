@@ -26,14 +26,6 @@ const ComparisonChart = memo(function ComparisonChart({
   showLegend = true,
   showGrid = true,
 }: ComparisonChartProps) {
-  if (!series.length) {
-    return (
-      <div className={`chart-empty ${className}`} style={{ height }}>
-        <p>No data available</p>
-      </div>
-    );
-  }
-
   // Flatten all data points for X axis domain
   const allDates = useMemo(() => {
     const dates = new Set<string>();
@@ -68,6 +60,14 @@ const ComparisonChart = memo(function ComparisonChart({
     const padding = (max - min) * 0.1 || 1;
     return [min - padding, max + padding] as [number, number];
   }, [series]);
+
+  if (!series.length) {
+    return (
+      <div className={`chart-empty ${className}`} style={{ height }}>
+        <p>No data available</p>
+      </div>
+    );
+  }
 
   const formatXAxis = (value: string) => {
     const date = new Date(value);

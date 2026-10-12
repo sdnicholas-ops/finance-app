@@ -37,10 +37,18 @@ jobs:
         run: npm run lint --if-present
 
       - name: Test
-        run: npm test --if-present -- --runInBand
+        run: npm test --if-present
 
       - name: Build
         run: npm run build --if-present
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finance-app-dist
+          path: finance-app/dist
+          if-no-files-found: ignore
 
   bob-feature-flow:
     name: Bob-assisted feature workflow guidance
