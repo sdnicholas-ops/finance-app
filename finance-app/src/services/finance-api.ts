@@ -10,7 +10,7 @@ const mockFinanceApi: FinanceApi = {
     const cached = cache.get<Quote[]>(cacheKey);
     if (cached) return cached;
 
-    const result = tickers.map((t) => mockQuotes[t] || mockQuotes.IBM).filter(Boolean);
+    const result = tickers.map((t) => mockQuotes[t]).filter(Boolean);
     cache.set(cacheKey, result, CACHE_TTL.quote);
     return result;
   },
@@ -20,7 +20,7 @@ const mockFinanceApi: FinanceApi = {
     const cached = cache.get<HistoryPoint[]>(cacheKey);
     if (cached) return cached;
 
-    const result = mockHistory[ticker]?.[window] || mockHistory.IBM[window];
+    const result = mockHistory[ticker]?.[window] || [];
     cache.set(cacheKey, result, CACHE_TTL.history);
     return result;
   },
@@ -30,7 +30,16 @@ const mockFinanceApi: FinanceApi = {
     const cached = cache.get<CompanyProfile>(cacheKey);
     if (cached) return cached;
 
-    const result = mockProfiles[ticker] || mockProfiles.IBM;
+    const result = mockProfiles[ticker] || {
+      symbol: ticker,
+      shortName: ticker,
+      longName: ticker,
+      sector: 'N/A',
+      industry: 'N/A',
+      website: '',
+      currency: 'USD',
+      exchange: 'N/A',
+    };
     cache.set(cacheKey, result, CACHE_TTL.history);
     return result;
   },
