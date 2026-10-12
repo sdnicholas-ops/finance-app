@@ -33,6 +33,10 @@ function resetStore() {
   useDashboardStore.setState({
     snapshots: new Map(),
     chartSeries: [],
+    customSymbol: '',
+    customSnapshot: null,
+    customLoading: false,
+    customError: null,
     activeWindow: '1D',
     selectedTickers: ['IBM', 'MSFT', 'ORCL', 'SAP', 'CRM'],
     loading: new Set(),
@@ -255,6 +259,71 @@ describe('DashboardStore', () => {
       // Should not throw
       useDashboardStore.getState().clearError('NOTEXIST');
       expect(useDashboardStore.getState().errors.size).toBe(0);
+    });
+  });
+
+  // ─── Custom Symbol state & actions ──────────────────────────────────────
+
+  describe('customSymbol and setCustomSymbol', () => {
+    it('sets custom symbol and fetches quote and history', async () => {
+      const nvdaQuote = { ...mockQuote, symbol: 'NVDA', shortName: 'NVIDIA' };
+      (financeApi.getQuotes as ReturnType<typeof vi.fn>).mockResolvedValue([nvdaQuote]);
+      (financeApi.getHistory as ReturnType<typeof vi.fn>).mockResolvedValue(mockHistory);
+
+      await useDashboardStore.getState().setCustomSymbol('nvda');
+
+      const state = useDashboardStore.getState();
+      expect(state.customSymbol).toBe('NVDA');
+      expect(state.customSnapshot?.quote.symbol).toBe('NVDA');
+      expect(state.customError).toBeNull();
+      expect(state.customLoading).toBe(false);
+    });
+
+    it('rejects invalid ticker formats with an inline error', async () => {
+      await useDashboardStore.getState().setCustomSymbol('IBM1');
+
+      const state = useDashboardStore.getState();
+      expect(state.customError).toBe('Ticker must be 1–5 letters (e.g. NVDA)');
+      expect(state.customSnapshot).toBeNull();
+      expect(financeApi.getQuotes).not.toHaveBeenCalled();
+    });
+
+    it('clears custom symbol state on clearCustomSymbol', async () => {
+      useDashboardStore.setState({
+        customSymbol: 'NVDA',
+        customSnapshot: { quote: mockQuote, history: mockHistory },
+        customError: null,
+      });
+
+      useDashboardStore.getState().clearCustomSymbol();
+
+      const state = useDashboardStore.getState();
+      expect(state.customSymbol).toBe('');
+      expect(state.customSnapshot).toBeNull();
+      expect(state.customError).toBeNull();
+    });
+
+    it('preserves customSymbol when switching activeWindow', () => {
+      useDashboardStore.setState({
+        customSymbol: 'NVDA',
+        customSnapshot: { quote: mockQuote, history: mockHistory },
+      });
+
+      useDashboardStore.getState().setActiveWindow('7D');
+
+      expect(useDashboardStore.getState().customSymbol).toBe('NVDA');
+      expect(useDashboardStore.getState().activeWindow).toBe('7D');
+    });
+
+    it('sets clear no-data error when symbol returns no quotes', async () => {
+      (financeApi.getQuotes as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+      (financeApi.getHistory as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+      await useDashboardStore.getState().setCustomSymbol('ZZZZ');
+
+      const state = useDashboardStore.getState();
+      expect(state.customError).toContain('No data found for symbol "ZZZZ"');
+      expect(state.customSnapshot).toBeNull();
     });
   });
 });

@@ -4,6 +4,8 @@ import { TimeWindowTabs } from '../components/dashboard/TimeWindowTabs';
 import { CompanyCard } from '../components/dashboard/CompanyCard';
 import { ErrorBanner } from '../components/dashboard/ErrorBanner';
 import { LoadingSkeleton } from '../components/dashboard/LoadingSkeleton';
+import { CompanySelector } from '../components/dashboard/CompanySelector';
+import { CustomSymbolPanel } from '../components/dashboard/CustomSymbolPanel';
 import { ComparisonChart } from '../components/charts/ComparisonChart';
 import { QuarterTrendChart } from '../components/charts/QuarterTrendChart';
 import {
@@ -14,6 +16,10 @@ import {
   selectSelectedTickers,
   selectLoading,
   selectErrors,
+  selectCustomSymbol,
+  selectCustomSnapshot,
+  selectCustomLoading,
+  selectCustomError,
 } from '../store/dashboardStore';
 import { getTimeWindowConfig } from '../types/finance';
 import { PRIMARY_TICKER } from '../config/tickers';
@@ -166,6 +172,13 @@ export function DashboardView() {
   const setActiveWindow = useDashboardStore((s) => s.setActiveWindow);
   const initialize = useDashboardStore((s) => s.initialize);
 
+  const customSymbol = useDashboardStore(selectCustomSymbol);
+  const customSnapshot = useDashboardStore(selectCustomSnapshot);
+  const customLoading = useDashboardStore(selectCustomLoading);
+  const customError = useDashboardStore(selectCustomError);
+  const setCustomSymbol = useDashboardStore((s) => s.setCustomSymbol);
+  const clearCustomSymbol = useDashboardStore((s) => s.clearCustomSymbol);
+
   useEffect(() => {
     initialize();
   }, [initialize]);
@@ -180,6 +193,21 @@ export function DashboardView() {
         {activeWindow === '7D' && <WeekView />}
         {activeWindow === '1Q' && <QuarterView />}
       </div>
+
+      <section className="cds-custom-company-section" aria-label="Custom Company Comparison">
+        <CompanySelector
+          activeSymbol={customSymbol}
+          onSelect={setCustomSymbol}
+          onClear={clearCustomSymbol}
+          isLoading={customLoading}
+        />
+        <CustomSymbolPanel
+          symbol={customSymbol}
+          snapshot={customSnapshot}
+          isLoading={customLoading}
+          error={customError}
+        />
+      </section>
     </div>
   );
 }

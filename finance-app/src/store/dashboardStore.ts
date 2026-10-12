@@ -9,6 +9,11 @@ interface DashboardState {
   // Data
   snapshots: Map<string, CompanySnapshot>;
   chartSeries: ChartSeries[];
+  // Custom Symbol Data
+  customSymbol: string;
+  customSnapshot: CompanySnapshot | null;
+  customLoading: boolean;
+  customError: string | null;
   // UI State
   activeWindow: TimeWindow;
   selectedTickers: string[];
@@ -16,6 +21,8 @@ interface DashboardState {
   errors: Map<string, Error>;
   // Actions
   setActiveWindow: (window: TimeWindow) => void;
+  setCustomSymbol: (symbol: string) => Promise<void>;
+  clearCustomSymbol: () => void;
   addTicker: (ticker: string) => Promise<void>;
   removeTicker: (ticker: string) => void;
   refreshAll: () => Promise<void>;
@@ -31,6 +38,10 @@ export const useDashboardStore = create<DashboardState>()(
     // Initial state
     snapshots: new Map(),
     chartSeries: [],
+    customSymbol: '',
+    customSnapshot: null,
+    customLoading: false,
+    customError: null,
     activeWindow: '1D',
     selectedTickers: initialTickers,
     loading: new Set(),
@@ -40,9 +51,91 @@ export const useDashboardStore = create<DashboardState>()(
     setActiveWindow: (window: TimeWindow) => {
       set({ activeWindow: window });
       // Rebuild chart series for new window
-      const { snapshots } = get();
+      const { snapshots, customSymbol, customSnapshot } = get();
       const chartSeries = buildChartSeries(snapshots, window);
       set({ chartSeries });
+
+      // Refresh custom history if custom symbol is active
+      if (customSymbol && customSnapshot) {
+        const historyPromise = financeApi.getHistory(customSymbol, window);
+        if (historyPromise && typeof historyPromise.then === 'function') {
+          historyPromise.then((history) => {
+            const current = get().customSnapshot;
+            if (current && get().customSymbol === customSymbol) {
+              set({
+                customSnapshot: {
+                  ...current,
+                  history,
+                },
+              });
+            }
+          }).catch(() => {
+            // Keep existing history on error
+          });
+        }
+      }
+    },
+
+    setCustomSymbol: async (symbol: string) => {
+      const upper = symbol.trim().toUpperCase();
+      if (!upper) {
+        get().clearCustomSymbol();
+        return;
+      }
+
+      if (!/^[A-Z]{1,5}$/.test(upper)) {
+        set({
+          customSymbol: upper,
+          customSnapshot: null,
+          customLoading: false,
+          customError: 'Ticker must be 1–5 letters (e.g. NVDA)',
+        });
+        return;
+      }
+
+      set({
+        customSymbol: upper,
+        customLoading: true,
+        customError: null,
+      });
+
+      try {
+        const [quotes, history] = await Promise.all([
+          financeApi.getQuotes([upper]),
+          financeApi.getHistory(upper, get().activeWindow),
+        ]);
+
+        const quote = quotes[0];
+        if (!quote || quote.regularMarketPrice === 0 && quote.regularMarketChange === 0 && !quote.regularMarketOpen) {
+          set({
+            customLoading: false,
+            customSnapshot: null,
+            customError: `No data found for symbol "${upper}". Check the ticker and try again.`,
+          });
+          return;
+        }
+
+        set({
+          customSnapshot: { quote, history },
+          customLoading: false,
+          customError: null,
+        });
+      } catch (err) {
+        set({
+          customLoading: false,
+          customSnapshot: null,
+          customError: err instanceof Error ? err.message : `Failed to load data for ${upper}`,
+        });
+      }
+    },
+
+    clearCustomSymbol: () => {
+      set({
+        customSymbol: '',
+        customSnapshot: null,
+        customLoading: false,
+        customError: null,
+      });
     },
 
     addTicker: async (ticker: string) => {
@@ -179,6 +272,10 @@ export const selectActiveWindow = (state: DashboardState) => state.activeWindow;
 export const selectSelectedTickers = (state: DashboardState) => state.selectedTickers;
 export const selectLoading = (state: DashboardState) => state.loading;
 export const selectErrors = (state: DashboardState) => state.errors;
+export const selectCustomSymbol = (state: DashboardState) => state.customSymbol;
+export const selectCustomSnapshot = (state: DashboardState) => state.customSnapshot;
+export const selectCustomLoading = (state: DashboardState) => state.customLoading;
+export const selectCustomError = (state: DashboardState) => state.customError;
 export const selectSnapshot = (ticker: string) => (state: DashboardState) =>
   state.snapshots.get(ticker.toUpperCase());
 export const selectIsLoading = (ticker: string) => (state: DashboardState) =>

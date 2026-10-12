@@ -21,6 +21,7 @@ const mockQuoteData: Record<string, MockQuoteExtras> = {
   ORCL: { shortName: 'Oracle',     open: 157.71, prevClose: 156.04, dayHigh: 161.10, dayLow: 157.20, volume: 3_700_000,  weekHigh: 198.31, weekLow: 100.16, marketCap: 440_000_000_000, target: 185.00, change:  4.48, changePercent:  2.87 },
   SAP:  { shortName: 'SAP',        open: 212.66, prevClose: 210.89, dayHigh: 215.30, dayLow: 211.50, volume: 9_900_000,  weekHigh: 236.10, weekLow: 145.02, marketCap: 258_000_000_000, target: 240.00, change:  3.70, changePercent:  1.75 },
   CRM:  { shortName: 'Salesforce', open: 282.74, prevClose: 284.45, dayHigh: 285.10, dayLow: 281.20, volume: 8_800_000,  weekHigh: 318.71, weekLow: 212.00, marketCap: 271_000_000_000, target: 320.00, change:  0.51, changePercent:  0.18 },
+  NVDA: { shortName: 'NVIDIA',     open: 120.50, prevClose: 118.25, dayHigh: 122.80, dayLow: 119.10, volume: 45_000_000, weekHigh: 140.76, weekLow:  40.50, marketCap: 2_950_000_000_000, target: 150.00, change:  4.25, changePercent:  3.59 },
 };
 
 export const mockQuotes: Record<string, Quote> = Object.fromEntries(
@@ -117,6 +118,11 @@ export const mockHistory: Record<string, Record<TimeWindow, HistoryPoint[]>> = {
     '7D': generateHistory(basePrices.CRM, 7, 0.02),
     '1Q': generateHistory(basePrices.CRM, 63, 0.025),
   },
+  NVDA: {
+    '1D': generateIntraday(basePrices.NVDA),
+    '7D': generateHistory(basePrices.NVDA, 7, 0.025),
+    '1Q': generateHistory(basePrices.NVDA, 63, 0.03),
+  },
 };
 
 export const mockProfiles: Record<string, CompanyProfile> = {
@@ -169,5 +175,15 @@ export const mockProfiles: Record<string, CompanyProfile> = {
     website: 'https://www.salesforce.com',
     currency: 'USD',
     exchange: 'NYSE',
+  },
+  NVDA: {
+    symbol: 'NVDA',
+    shortName: 'NVIDIA',
+    longName: 'NVIDIA Corporation',
+    sector: 'Technology',
+    industry: 'Semiconductors',
+    website: 'https://www.nvidia.com',
+    currency: 'USD',
+    exchange: 'NASDAQ',
   },
 };
